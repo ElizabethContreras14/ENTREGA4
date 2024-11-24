@@ -1,0 +1,318 @@
+---
+title: "Entregable 3"
+output:
+  flexdashboard::flex_dashboard:
+    social: 
+    navbar:
+        - { title: "Fuente de Datos", href: "https://proyectos.inei.gob.pe/microdatos/", align: right }
+
+---
+#### Datos
+
+Los datos han sido obtenidos de las bases de datos de ENDES (Encuesta Demográfica y de Salud Familiar) 2022
+
+Variables que afectal a los embarazos en niñas y adolescentes entre 10 y 19 años en el Perú.
+La fuente se puede obtener del botón "Fuente de Datos" en la barra de navegación
+
+```{r setup, include=FALSE}
+library(readxl)
+datos <- read_excel("D:/R/data_clean.xlsx")
+library(rio)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(polycor)
+library(modelsummary)
+library(psych)
+library(e1071)
+library(ggplot2)
+data <- read.csv("D:/R/REC91.csv", header = TRUE, sep = ";", stringsAsFactors = FALSE)
+
+data<- data %>% select(SREGION,SPROVIN,SDISTRI,S108N,S112,S119,S119D,S616,S718) %>% rename(
+          
+          REGION = SREGION,
+          #PROVINCIA = SPROVIN,
+          #DISTRITO = SDISTRI,
+          NIVEL_EDUCATIVO = S108N,
+          RAZON_DEJAR_ASISTIR = S112,
+          LENGUA_MATERNA = S119,
+          IDENTIFICACION = S119D,
+          #APROBACION_METODOS = S616,
+          #INGRESOS = S718
+        )
+
+
+data_clean <-data  %>%
+        mutate(
+          REGION = factor(case_when(
+            REGION == 1 ~ "Lima Metropolitana",
+            REGION == 2 ~ "Resto Costa",
+            REGION == 3 ~ "Sierra",
+            REGION == 4 ~ "Selva",
+            TRUE ~ "No especificado"
+          )),
+          NIVEL_EDUCATIVO = factor(case_when(
+            NIVEL_EDUCATIVO == 0 ~ "Inicial",
+            NIVEL_EDUCATIVO == 1 ~ "Primario",
+            NIVEL_EDUCATIVO == 2 ~ "Secundario",
+            NIVEL_EDUCATIVO == 3 ~ "Superior no universitario",
+            NIVEL_EDUCATIVO == 4 ~ "Superior universitario",
+            NIVEL_EDUCATIVO == 5 ~ "Posgrado",
+            TRUE ~ "No especificado"
+          )),
+          RAZON_DEJAR_ASISTIR =factor(case_when(
+               
+            RAZON_DEJAR_ASISTIR == 1 ~ "Embarazada",
+            RAZON_DEJAR_ASISTIR == 2 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 3 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 4 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 5 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 6 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 7 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 8 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 9 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 10 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 11 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 12 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 13 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 96 ~ "Otro",
+            RAZON_DEJAR_ASISTIR == 98 ~ "Otro",
+            TRUE ~ "Otro"
+          )),
+          LENGUA_MATERNA = factor(case_when(
+            LENGUA_MATERNA == 1 ~ "Quechua",
+            LENGUA_MATERNA == 2 ~ "Aymara",
+            LENGUA_MATERNA == 3 ~ "Ashaninka",
+            LENGUA_MATERNA == 4 ~ "Awajun",
+            LENGUA_MATERNA == 5 ~ "Shipibo",
+            LENGUA_MATERNA == 6 ~ "Shawi",
+            LENGUA_MATERNA == 7 ~ "Machiguenga",
+            LENGUA_MATERNA == 8 ~ "Achuar",
+            LENGUA_MATERNA == 9 ~ "Otra lengua",
+            LENGUA_MATERNA == 10 ~ "Castellano",
+            LENGUA_MATERNA == 11 ~ "Portugues",
+            LENGUA_MATERNA == 12 ~ "Otra lengua extranjera",
+            TRUE ~ "No especificado"
+          )),
+          IDENTIFICACION = factor(case_when(
+            IDENTIFICACION == 1 ~ "Procedencia Quechua",
+            IDENTIFICACION == 2 ~ "Procedencia Aimara",
+            IDENTIFICACION == 3 ~ "Procedencia Nativo o Indigena",
+            IDENTIFICACION == 4 ~ "Procedencia Parte de otro pueblo indigena",
+            IDENTIFICACION == 5 ~ "Procedencia Afroperuano",
+            IDENTIFICACION == 6 ~ "Procedencia Blanco",
+            IDENTIFICACION == 7 ~ "Procedencia Mestizo",
+            IDENTIFICACION == 8 ~ "Otro",
+            IDENTIFICACION == 98 ~ "No sabe",
+            TRUE ~ "No especificado"
+          ))
+          
+        )
+
+
+```
+
+
+ANALISIS UNIVARIADO
+=====================================
+
+
+#### Analisis Univariado
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+Row {data-height=900}
+-----------------------------------------------------------------------
+
+```{r}
+
+ggplot(data_clean,aes(x=RAZON_DEJAR_ASISTIR))+
+  geom_bar(fill="lightblue",color="black")+
+  geom_text(stat="count",aes(label=..count..),vjust=-0.3,color="black",size=5)+
+  labs(title="Distribución de Embarazos",x="Embarazos",y="Frecuencia")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle=90,hjust=1))
+```
+
+
+
+
+```{r}
+ggplot(data_clean,aes(x=REGION))+
+  geom_bar(fill="lightblue",color="black")+
+  geom_text(stat="count",aes(label=..count..),vjust=-0.3,color="black",size=5)+
+  labs(title="Distribución de Region",x="Region",y="Frecuencia")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle=90,hjust=1))
+
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+
+```{r}
+ggplot(data_clean,aes(x=NIVEL_EDUCATIVO))+
+  geom_bar(fill="lightblue",color="black")+
+  geom_text(stat="count",aes(label=..count..),vjust=-0.3,color="black",size=5)+
+  labs(title="Distribución de Nivel Educativo",x="Nivel Educativo",y="Frecuencia")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle=90,hjust=1))
+
+```
+
+```{r}
+ggplot(data_clean,aes(x=LENGUA_MATERNA))+
+  geom_bar(fill="lightblue",color="black")+
+  geom_text(stat="count",aes(label=..count..),vjust=-0.3,color="black",size=5)+
+  labs(title="Distribución de Lengua Materna",x="Lengua Materna",y="Frecuencia")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle=90,hjust=1))
+
+```
+
+```{r}
+ggplot(data_clean,aes(x=IDENTIFICACION))+
+  geom_bar(fill="lightblue",color="black")+
+  geom_text(stat="count",aes(label=..count..),vjust=-0.3,color="black",size=5)+
+  labs(title="Distribución de Lengua Materna",x="Identificación",y="Frecuencia")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle=90,hjust=1))
+
+```
+
+ANALISIS MULTIVARIADO
+=====================================
+#### Analisis Multivariado
+
+Chi Cuadrado - Embarazo y Region
+```{r}
+test_region <-chisq.test(data_clean$RAZON_DEJAR_ASISTIR,data_clean$REGION)
+
+test_region
+df <- test_region$parameter  # Grados de libertad
+x_vals <- seq(0, 20, length.out = 100)
+y_vals <- dchisq(x_vals, df)
+
+plot(x_vals, y_vals, type = "l", lwd = 2, col = "blue", 
+     xlab = "Estadístico Chi-cuadrado", ylab = "Densidad", 
+     main = paste("Distribución Chi-cuadrado con", df, "grados de libertad"))
+abline(v = test_region$statistic, col = "red", lwd = 2, lty = 2)  
+legend("topright", legend = paste("Valor Chi-cuadrado: ", round(test_region$statistic, 2)),
+       col = "red", lty = 2, lwd = 2)
+
+```
+
+Chi Cuadrado - Embarazo y Nivel Educativo
+```{r}
+test_educativo <-chisq.test(data_clean$RAZON_DEJAR_ASISTIR,data_clean$NIVEL_EDUCATIVO)
+
+test_educativo
+df <- test_educativo$parameter  # Grados de libertad
+x_vals <- seq(0, 20, length.out = 100)
+y_vals <- dchisq(x_vals, df)
+
+plot(x_vals, y_vals, type = "l", lwd = 2, col = "blue", 
+     xlab = "Estadístico Chi-cuadrado", ylab = "Densidad", 
+     main = paste("Distribución Chi-cuadrado con", df, "grados de libertad"))
+abline(v = test_educativo$statistic, col = "red", lwd = 2, lty = 2)  
+legend("topright", legend = paste("Valor Chi-cuadrado: ", round(test_educativo$statistic, 2)),
+       col = "red", lty = 2, lwd = 2)
+
+```
+
+Chi Cuadrado - Embarazo y Lengua Materna
+```{r}
+test_materna <-chisq.test(data_clean$RAZON_DEJAR_ASISTIR,data_clean$LENGUA_MATERNA)
+
+test_materna
+df <- test_materna$parameter  # Grados de libertad
+x_vals <- seq(0, 20, length.out = 100)
+y_vals <- dchisq(x_vals, df)
+
+plot(x_vals, y_vals, type = "l", lwd = 2, col = "blue", 
+     xlab = "Estadístico Chi-cuadrado", ylab = "Densidad", 
+     main = paste("Distribución Chi-cuadrado con", df, "grados de libertad"))
+abline(v = test_materna$statistic, col = "red", lwd = 2, lty = 2)  
+legend("topright", legend = paste("Valor Chi-cuadrado: ", round(test_materna$statistic, 2)),
+       col = "red", lty = 2, lwd = 2)
+
+```
+
+Chi Cuadrado - Embarazo y Identificación
+```{r}
+test_identificacion <-chisq.test(data_clean$RAZON_DEJAR_ASISTIR,data_clean$IDENTIFICACION)
+
+test_identificacion
+df <- test_identificacion$parameter  # Grados de libertad
+x_vals <- seq(0, 20, length.out = 100)
+y_vals <- dchisq(x_vals, df)
+
+plot(x_vals, y_vals, type = "l", lwd = 2, col = "blue", 
+     xlab = "Estadístico Chi-cuadrado", ylab = "Densidad", 
+     main = paste("Distribución Chi-cuadrado con", df, "grados de libertad"))
+abline(v = test_identificacion$statistic, col = "red", lwd = 2, lty = 2)  
+legend("topright", legend = paste("Valor Chi-cuadrado: ", round(test_identificacion$statistic, 2)),
+       col = "red", lty = 2, lwd = 2)
+
+```
+
+Regresión Logística Binaria
+```{r}
+modelo_logistico = glm(data_clean$RAZON_DEJAR_ASISTIR ~ data_clean$NIVEL_EDUCATIVO + data_clean$LENGUA_MATERNA + data_clean$IDENTIFICACION, data = data_clean, family = "binomial")
+
+summary(modelo_logistico)
+
+```
+
+CONCLUSIONES
+=====================================
+
+#### Conclusiones
+
+##### Analisis Univariado
+Sobre el análisis univariado se ha analizado cada variable de manera independiente : 
+
+1.Embarazos : Dentro de los datos obtenidos, se puede ver que la proporciòn de embarazadas no es tanta ya que son 1,305 embarazadas y 36,800 no embarazadas. Esto significa que el 3.4% de encuestadas son embarazadas
+
+2.Regiòn : Vemos que entre las regiones hay una gran variedad de encuestadas. Particularmente hay muchas encuestadas de la Sierra y Resto de Costa. El menor nùmero de encuestadas està en Lima Metrpolitana
+
+3.Nivel Educativo : En cuanto al nivel educativo, la mayoría tiene la secundaria completa.
+
+3.Lengua Materna : En cuanto a lengua materna, la mayoría hablan castellano.
+
+
+#### Analisis Multivariado
+Sobre el analisis multivariado, se han hecho los análisis de chi cuadrado y regresión logística
+
+
+1.Chi Cuadrado
+1.1. Embarazo y Región
+El valor del p-value de 0.002111 indica que hay
+una asociación estadísticamente significativa
+entre estas dos variables categóricas
+
+1.2.Embarazo  y Lengua Materna
+
+El valor del p-value (1.341e-15) indica que hay una relación estadísticamente significativa entre ambas variables
+
+1.3.Embarazo  y Identificación
+
+El valor del p-value (2.2e-16) indica que hay una relación estadísticamente significativa entre ambas variables
+
+
+
+
+
+
+2.Regresión Logística
+
+2.1. Aimara
+Se indica que aquellas personas que se identifican con el grupo de Aimara tienen un p-valor de 0.0486 , lo que es significativo.
+
+
+2.2. Demás categorías
+Las demas categorias de las demas variables no han mostrado una relación particularmente grande por tener un p-valor muy alto.
+
+
